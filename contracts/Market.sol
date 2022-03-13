@@ -15,18 +15,26 @@ contract Market{
 
     struct Listing{
         ListingStatus status;
-        address payable seller;
+        address  seller;
         address token;
         uint tokenId;
         uint price;
 
     }
 
+    event Listed(
+        uint listingId,
+        address seller,
+        address token,
+        uint tokenId,
+        uint price
+    );
+
     uint private _listingId = 0;
     mapping(uint=> Listing) _listings;
 
 //SHOW TOKENS AVAILABLE ON THE MARKET PLACE
-    function listToken(address seller,address token, uint tokenId, uint price) external{
+    function listToken(address token, uint tokenId, uint price) external{
         //transfer token from seller to our address
         IERC721(token).transferFrom(msg.sender, address(this), tokenId);
 
@@ -42,6 +50,8 @@ contract Market{
         _listingId++;
 
         _listings[_listingId] = listing;
+
+        emit Listed(_listingId, msg.sender, token, tokenId, price);
     }
 
 //BUY AVAILALBLE TOKEN ON THE MARKET PLACE
@@ -60,7 +70,7 @@ contract Market{
 
     //transfer token from our address to buyer's address
     IERC721(listing.token).transferFrom(address(this), msg.sender, listing.tokenId);
-    listing.seller.transfer(listing.price); 
+    payable(listing.seller.transfer(listing.price)); 
     
     }
 
