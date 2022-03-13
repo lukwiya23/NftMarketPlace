@@ -9,13 +9,13 @@ contract Market{
 
     enum ListingStatus{
         Active,
-        Solid, 
+        Sold, 
         Cancelled
     }
 
     struct Listing{
         ListingStatus status;
-        address seller;
+        address payable seller;
         address token;
         uint tokenId;
         uint price;
@@ -27,6 +27,7 @@ contract Market{
 
 //SHOW TOKENS AVAILABLE ON THE MARKET PLACE
     function listToken(address seller,address token, uint tokenId, uint price) external{
+        //transfer token from seller to our address
         IERC721(token).transferFrom(msg.sender, address(this), tokenId);
 
         Listing memory listing = Listing(
@@ -55,7 +56,23 @@ contract Market{
     //check buyer's balance before transaction
     require(msg.value >= listing.price, "You have insufficient ether in your wallet");
 
-    //buy token
+    listing.status = ListingStatus.Sold;
+
+    //transfer token from our address to buyer's address
+    IERC721(listing.token).transferFrom(address(this), msg.sender, listing.tokenId);
+    listing.seller.transfer(listing.price); 
     
+    }
+
+//cancel sell of token
+    function cancel(uint listingId) public{
+        Listing storage listing = _listings[_listingId];
+
+        require(listing.status==ListingStatus.Active, "Listing is not Active");
+        require(msg.sender == listing.seller,"Only seller can cancel listing");
+
+        listing.status = ListingStatus.Cancelled;
+
+        IERC721(listing.token).transferFrom(address(this), msg.sender, listing.tokenId);
     }
 }
